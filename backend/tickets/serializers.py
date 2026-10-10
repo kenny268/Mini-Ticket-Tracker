@@ -34,6 +34,22 @@ class TicketCreateSerializer(serializers.Serializer):
         return value.strip()
 
 
+class TicketUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Ticket.Status.choices, required=False)
+    priority = serializers.ChoiceField(choices=Ticket.Priority.choices, required=False)
+
+    def validate(self, attrs):
+        if not isinstance(self.initial_data, dict):
+            raise serializers.ValidationError("Expected an object.")
+        unknown = set(self.initial_data) - {"status", "priority"}
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise serializers.ValidationError(f"Unknown fields: {names}.")
+        if not attrs:
+            raise serializers.ValidationError("Provide status or priority.")
+        return attrs
+
+
 class TicketListQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Ticket.Status.choices, required=False)
     page = serializers.IntegerField(required=False, min_value=1, default=1)
