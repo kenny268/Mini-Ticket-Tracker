@@ -1,5 +1,6 @@
 "use client"
 
+import { Inbox, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 import { LoginCard } from "@/components/LoginCard"
@@ -20,48 +21,60 @@ import { useTickets } from "@/hooks/useTickets"
 import { STATUS_LABELS, TICKET_STATUSES, isTicketStatus, type StatusFilter } from "@/lib/types"
 
 const FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: "", label: "All" },
+  { value: "", label: "All tickets" },
   ...TICKET_STATUSES.map((status) => ({ value: status, label: STATUS_LABELS[status] })),
 ]
 
 export default function HomePage() {
   const session = useSession()
   const board = useTickets(session.token, session.logout)
+  const queueTotal = board.stats.open + board.stats.in_progress + board.stats.closed
+  const summary =
+    queueTotal === 0
+      ? "Nothing waiting"
+      : `${board.stats.open} open · ${board.stats.in_progress} in progress · ${board.stats.closed} closed`
+  const viewTitle = board.filter ? STATUS_LABELS[board.filter] : "All tickets"
 
   return (
     <div className="min-h-full">
-      <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+            <Inbox className="size-4" />
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground">Support desk</p>
-            <h1 className="truncate text-lg font-semibold tracking-tight">Mini Ticket Tracker</h1>
+            <h1 className="truncate text-base font-semibold tracking-tight">Ticket desk</h1>
+            <p className="truncate text-xs text-muted-foreground">{summary}</p>
           </div>
-          <div className="hidden items-center gap-1 lg:flex">
-            {FILTERS.map((item) => (
-              <Button
-                key={item.label}
-                type="button"
-                size="sm"
-                variant={board.filter === item.value ? "default" : "outline"}
-                onClick={() => board.setFilter(item.value)}
-              >
-                {item.label}
-              </Button>
-            ))}
+          <div className="flex items-center gap-2">
+            {session.isAuthenticated ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="sm:hidden"
+                  aria-label="Log out"
+                  onClick={session.logout}
+                >
+                  <LogOut />
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="hidden sm:inline-flex" onClick={session.logout}>
+                  Log out
+                </Button>
+              </>
+            ) : null}
+            <ThemeToggle />
           </div>
-          {session.isAuthenticated ? (
-            <Button type="button" variant="outline" onClick={session.logout}>
-              Log out
-            </Button>
-          ) : null}
-          <ThemeToggle />
         </div>
       </header>
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
-        <div className="order-1 lg:col-start-1 lg:row-start-2">
+
+      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <div className="lg:col-span-2">
           <StatsCards stats={board.stats} active={board.filter} onSelect={board.setFilter} />
         </div>
-        <div className="order-2 lg:sticky lg:top-24 lg:col-start-1 lg:row-start-1">
+
+        <div className="order-1 lg:sticky lg:top-20 lg:order-none">
           {session.isAuthenticated ? (
             <TicketForm onSubmit={board.create} />
           ) : (
@@ -78,32 +91,40 @@ export default function HomePage() {
             />
           )}
         </div>
-        <section className="order-3 grid gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <div className="lg:hidden">
-            <Select
-              value={board.filter || "all"}
-              onValueChange={(value) => {
-                if (value === "all" || value == null) {
-                  board.setFilter("")
-                  return
-                }
-                if (isTicketStatus(value)) {
-                  board.setFilter(value)
-                }
-              }}
-            >
-              <SelectTrigger className="w-full" aria-label="Filter by status">
-                <SelectValue placeholder="All tickets" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All tickets</SelectItem>
-                {TICKET_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+        <section className="order-2 grid content-start gap-4 lg:order-none">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">{viewTitle}</h2>
+              <p className="text-sm text-muted-foreground">
+                {board.loading ? "Loading the queue" : `${board.total} in this view`}
+              </p>
+            </div>
+            <div className="lg:hidden">
+              <Select
+                value={board.filter || "all"}
+                onValueChange={(value) => {
+                  if (value === "all" || value == null) {
+                    board.setFilter("")
+                    return
+                  }
+                  if (isTicketStatus(value)) {
+                    board.setFilter(value)
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full bg-card sm:w-48" aria-label="Filter by status">
+                  <SelectValue>{viewTitle}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {FILTERS.map((item) => (
+                    <SelectItem key={item.label} value={item.value || "all"}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <TicketList
             tickets={board.tickets}

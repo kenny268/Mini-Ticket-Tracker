@@ -9,7 +9,7 @@ A small support-ticket board: a Django API, a Next.js page, and PostgreSQL.
 | Email | `demo@example.com` |
 | Password | `demo-pass-123` |
 
-Open [http://localhost:3000](http://localhost:3000) after the stack is up. The same account is shown on the login card. Reads work before you log in. Creating a ticket or changing its status requires this user.
+Open [http://localhost:3000](http://localhost:3000) after the stack is up and sign in with the account above. Reads work before you log in. Creating a ticket or changing its status requires this user.
 
 ## Setup
 

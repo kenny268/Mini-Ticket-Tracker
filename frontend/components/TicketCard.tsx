@@ -1,5 +1,7 @@
 "use client"
 
+import { useSyncExternalStore } from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -9,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { priorityTone, statusTone } from "@/components/ticket-tone"
 import { cn } from "@/lib/utils"
 import {
   PRIORITY_LABELS,
@@ -19,48 +22,67 @@ import {
   type TicketStatus,
 } from "@/lib/types"
 
-const statusClassName: Record<TicketStatus, string> = {
-  open: "bg-sky-500/15 text-sky-800 dark:text-sky-200",
-  in_progress: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
-  closed: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
-}
-
-const priorityClassName = {
-  low: "bg-muted text-muted-foreground",
-  medium: "bg-primary/10 text-foreground",
-  high: "bg-rose-500/15 text-rose-800 dark:text-rose-200",
-} as const
-
 type TicketCardProps = {
   ticket: Ticket
   updating: boolean
   onStatusChange: (id: number, status: TicketStatus) => void
 }
 
+function useClientReady() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
+}
+
 function formatCreatedAt(value: string) {
   return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(value))
 }
 
 export function TicketCard({ ticket, updating, onStatusChange }: TicketCardProps) {
+  const ready = useClientReady()
+  const tone = statusTone[ticket.status]
+
   return (
-    <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300 transition hover:-translate-y-0.5">
-      <CardHeader>
-        <CardTitle className="line-clamp-2">{ticket.title}</CardTitle>
-        <div className="flex flex-wrap gap-2">
-          <Badge className={statusClassName[ticket.status]}>{STATUS_LABELS[ticket.status]}</Badge>
-          <Badge className={priorityClassName[ticket.priority]}>{PRIORITY_LABELS[ticket.priority]}</Badge>
+    <Card
+      className={cn(
+        "relative overflow-hidden shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        updating && "opacity-70",
+      )}
+    >
+      <span className={cn("absolute inset-y-0 left-0 w-1", tone.rail)} aria-hidden />
+      <CardHeader className="pl-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] tracking-wide text-muted-foreground">
+              #{String(ticket.id).padStart(3, "0")}
+            </p>
+            <CardTitle className="line-clamp-2 text-base">{ticket.title}</CardTitle>
+          </div>
+          <Badge className={cn("shrink-0", priorityTone[ticket.priority])}>
+            {PRIORITY_LABELS[ticket.priority]}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className={cn("text-sm", ticket.description ? "text-foreground" : "text-muted-foreground")}>
-          {ticket.description || "No description"}
+      <CardContent className="pl-5">
+        <p className={cn("line-clamp-3 text-sm leading-6", ticket.description ? "text-foreground/80" : "text-muted-foreground")}>
+          {ticket.description || "No extra detail was added."}
         </p>
       </CardContent>
-      <CardFooter className="grid gap-3 bg-transparent">
-        <p className="text-xs text-muted-foreground">{formatCreatedAt(ticket.created_at)}</p>
+      <CardFooter className="items-center justify-between gap-3 bg-muted/40 pl-5">
+        <div className="min-w-0">
+          <Badge className={tone.badge}>{STATUS_LABELS[ticket.status]}</Badge>
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {ready ? formatCreatedAt(ticket.created_at) : "Just filed"}
+            {updating ? " · Saving" : ""}
+          </p>
+        </div>
         <Select
           value={ticket.status}
           disabled={updating}
@@ -70,13 +92,16 @@ export function TicketCard({ ticket, updating, onStatusChange }: TicketCardProps
             }
           }}
         >
-          <SelectTrigger className="w-full" aria-label={`Status for ${ticket.title}`}>
+          <SelectTrigger className="w-[8.5rem] bg-background" aria-label={`Status for ${ticket.title}`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {TICKET_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
-                {STATUS_LABELS[status]}
+                <span className="flex items-center gap-2">
+                  <span className={cn("size-1.5 rounded-full", statusTone[status].dot)} />
+                  {STATUS_LABELS[status]}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

@@ -8,14 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { priorityTone } from "@/components/ticket-tone"
+import { cn } from "@/lib/utils"
 import { PRIORITY_LABELS, TICKET_PRIORITIES, isTicketPriority } from "@/lib/types"
 import { ticketCreateSchema, type TicketCreateValues } from "@/lib/validators"
 
@@ -31,10 +26,11 @@ export function TicketForm({ onSubmit }: TicketFormProps) {
   })
 
   return (
-    <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <Card className="shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
       <CardHeader>
-        <CardTitle>New ticket</CardTitle>
-        <CardDescription>New tickets start as open. Choose a priority before you save.</CardDescription>
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">New ticket</p>
+        <CardTitle>File something for the queue</CardTitle>
+        <CardDescription>It opens immediately. Priority is the only choice you make up front.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -70,7 +66,7 @@ export function TicketForm({ onSubmit }: TicketFormProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea className="min-h-24 w-full" placeholder="Optional details" {...field} />
+                    <Textarea className="min-h-24 w-full resize-none" placeholder="What should the next person know?" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,31 +78,36 @@ export function TicketForm({ onSubmit }: TicketFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      if (isTicketPriority(value)) {
-                        field.onChange(value)
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full" aria-invalid={Boolean(form.formState.errors.priority)}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TICKET_PRIORITIES.map((priority) => (
-                        <SelectItem key={priority} value={priority}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {TICKET_PRIORITIES.map((priority) => {
+                      const selected = field.value === priority
+                      return (
+                        <button
+                          key={priority}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => {
+                            if (isTicketPriority(priority)) {
+                              field.onChange(priority)
+                            }
+                          }}
+                          className={cn(
+                            "h-9 rounded-lg border text-sm font-medium transition-colors",
+                            selected ? priorityTone[priority] : "bg-background text-muted-foreground hover:bg-muted",
+                            selected && "border-transparent",
+                          )}
+                        >
                           {PRIORITY_LABELS[priority]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </button>
+                      )
+                    })}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Creating..." : "Create ticket"}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+              {submitting ? "Filing..." : "File ticket"}
             </Button>
           </form>
         </Form>

@@ -10,9 +10,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { loginSchema, type LoginValues } from "@/lib/validators"
 
-const DEMO_EMAIL = "demo@example.com"
-const DEMO_PASSWORD = "demo-pass-123"
-
 type LoginCardProps = {
   onSubmit: (values: LoginValues) => Promise<void>
 }
@@ -21,14 +18,15 @@ export function LoginCard({ onSubmit }: LoginCardProps) {
   const [submitting, setSubmitting] = useState(false)
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+    defaultValues: { email: "", password: "" },
   })
 
   return (
-    <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <Card className="shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
       <CardHeader>
-        <CardTitle>Log in to make changes</CardTitle>
-        <CardDescription>Reads stay open. Creating and updating a ticket needs the demo account.</CardDescription>
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Write access</p>
+        <CardTitle>Sign in to update the queue</CardTitle>
+        <CardDescription>The board is public. Sign in to file a ticket or change its status.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -69,13 +67,8 @@ export function LoginCard({ onSubmit }: LoginCardProps) {
                 </FormItem>
               )}
             />
-            <div className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Demo account</p>
-              <p>{DEMO_EMAIL}</p>
-              <p>{DEMO_PASSWORD}</p>
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Logging in..." : "Log in"}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+              {submitting ? "Signing in..." : "Continue"}
             </Button>
           </form>
         </Form>
